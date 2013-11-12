@@ -93,7 +93,7 @@ function accurate_trim_field_formatter_view($entity_type, $entity, $field, $inst
  * @param int $max_length
  *  (optional) Text max length. Defaults to 600.
  * @param boolean $add_ellipsis
- *  (optional) Whether or not add ellipsis.
+ *  (optional) Whether or not add ellipsis. Defaults to TRUE.
  * @return string
  *  Precisely trimmed text with optional ellipsis.
  */
