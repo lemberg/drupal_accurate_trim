@@ -1,0 +1,133 @@
+<?php
+
+/**
+ * @file
+ * Provides 'Accurate trim' field formatter for text fields. Precisely trims
+ * text based on given max length parameter. Optionally ellipsis could be added.
+ */
+
+/*
+* Implements hook_field_formatter_info()
+*/
+function accurate_trim_field_formatter_info() {
+  return array(
+    'accurate_trim_ellipsis' => array(
+      'label' => t('Trimmed with ellipsis (accurate)'),
+      'field types' => array('text', 'text_long', 'text_with_summary'),
+      'settings' => array(
+        'trim_length' => 600,
+        'add_ellipsis' => TRUE,
+      ),
+    ),
+  );
+}
+
+/*
+* Implements hook_field_formatter_settings_form()
+*/
+function accurate_trim_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $element = array();
+
+  $element['trim_length'] = array(
+    '#title' => t('Trim length'),
+    '#type' => 'textfield',
+    '#size' => 10,
+    '#default_value' => $settings['trim_length'],
+    '#element_validate' => array('element_validate_integer_positive'),
+    '#required' => TRUE,
+  );
+  $element['add_ellipsis'] = array(
+    '#title' => t('Add ellipsis'),
+    '#type' => 'checkbox',
+    '#default_value' => $settings['add_ellipsis'],
+    '#required' => TRUE,
+  );
+
+  return $element;
+}
+
+/*
+* Implements hook_field_formatter_settings_summary()
+*/
+function accurate_trim_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+
+  $summary[] = t('Trim length: !length', array('!length' => $settings['trim_length']));
+  $summary[] = t('Add ellipsis: !flag', array('!flag' => $settings['add_ellipsis'] ? t('Yes') : t('No')));
+
+
+  return implode('<br/>', $summary);
+}
+
+/*
+* Implements hook_field_formatter_view()
+*/
+function accurate_trim_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'accurate_trim_ellipsis':
+      foreach ($items as $delta => $item) {
+        $output = _text_sanitize($instance, $langcode, $item, 'value');
+        $output = accurate_trim_summary($output, $display['settings']['trim_length'], $display['settings']['add_ellipsis']);
+        $element[$delta] = array('#markup' => $output);
+      }
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Precisely trims text based on given $max_length parameter. Doesn't look for
+ * paragraphs.
+ *
+ * @param string $text
+ *  Text to trim.
+ * @param int $max_length
+ *  (optional) Text max length. Defaults to 600.
+ * @param boolean $add_ellipsis
+ *  (optional) Whether or not add ellipsis.
+ * @return string
+ *  Precisely trimmed text with optional ellipsis.
+ */
+function accurate_trim_summary($text, $max_length = 600, $add_ellipsis = TRUE) {
+
+  $return = '';
+
+  // Replace multiple spaces by single one.
+  $text = preg_replace('/(\s)+/', '${1}', $text);
+
+  $i = 0; $in_tag = FALSE;
+  while(isset($text{$i}) && $max_length) {
+    $char = $text{$i};
+
+    switch($char) {
+      case '<':
+        $in_tag = TRUE;
+        break;
+      case '>':
+        $in_tag = FALSE;
+        break;
+    }
+
+    if(!$in_tag && $char != '>') {
+      $max_length--;
+    }
+
+    $return .= $char; $i++;
+  }
+
+  // Add ellipsis, if text actually was trimmed.
+  if($max_length <= 0 && $add_ellipsis) {
+    $return .= '…';
+  }
+
+  return _filter_htmlcorrector($return);
+}

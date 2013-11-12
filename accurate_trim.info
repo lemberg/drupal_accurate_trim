@@ -1,0 +1,6 @@
+name = Perfect trim
+description = Provides new field formatter for text fields, which tries to maintain text length.
+core = 7.x
+package = Field
+version = 7.x-1.0
+dependencies[] = field
