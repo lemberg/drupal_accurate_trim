@@ -3,4 +3,4 @@ description = Provides new field formatter for text fields, which tries to maint
 core = 7.x
 package = Field
 version = 7.x-1.0
-dependencies[] = field
+dependencies[] = text
